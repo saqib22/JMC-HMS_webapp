@@ -1,0 +1,49 @@
+<% include ../partials/header %>
+    <div class="ui container center aligned" style = "margin:10px;">
+        <h1 class="ui massive blue  header" style="margin: 10px;"> Dashboard </h1>
+        <div class = "ui section divider"></div>
+        <div class="ui raised blue segment">
+            <div class="ui animated relaxed divided list">
+
+                <div class="ui large blue header" style="font-size: 2.5em;"> Select an action:</div>
+
+
+                <div class="item">
+                    <p> <a href="/receptionist/users/new"> <button class = "ui inverted massive blue button" style = "width: 15em;"> New Invoice</button> </a></p>
+                </div>
+                <div class="item">
+                    <p>
+                        <a href="/receptionist/users/newDoctor"> <button class="ui inverted massive blue button" style="width: 15em;">
+                             New Doctor
+                            
+                            </button>
+                        </a>
+                    </p>
+                </div>
+
+                <div class="item">
+                    <p>
+                        <a href="/receptionist/doctorShares"> <button class="ui inverted massive blue button" style="width: 15em;">
+                             Doctor Shares
+                            
+                            </button>
+                        </a>
+                    </p>
+                </div>
+
+                <div class="item">
+                    <p> <a href="/receptionist/appointments/new"> <button class = "ui inverted massive blue button" style = "width: 15em;"> Create Appointment</button> </a></p>
+                </div>
+
+
+
+            </div>
+        </div>
+    </div>
+<% include ../partials/footer %>
+        <!--           
+<p> <a href = "/receptionist/users/register"> Register a new user </a> </p>
+<p> <a href = "/receptionist/users"> View users </a> </p>
+<p> <a href = "/receptionist/appointments"> View appointments </a> </p>
+<p> <a href = "/receptionist/appointments/new"> Create new appointment </a> </p>
+<p> <a href = "/receptionist/admissions"> Manage admissions </a> </p> -->

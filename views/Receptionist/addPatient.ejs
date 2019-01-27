@@ -1,0 +1,228 @@
+<% include ../partials/header %>
+<% include ./receptionistSideBar %>
+	<div class="ui  center aligned container" style="margin:10px 0px;">
+
+		<h1 class="ui massive blue header very padded">New Patient</h1>
+
+		<div class="ui divider"></div>
+		<div id = "messageArea"></div>
+
+
+		<div class="left aligned ui blue raised segment" style="width:60%; margin: auto;">
+
+			<form method = "POST" action = "/receptionist/newPatient" id = "patientForm">
+				<div class="ui form">
+					<div class="ui grid" style="margin: auto;">
+
+
+						<div class="row" style="margin-bottom: 0; margin-top: 0;">
+							<div class="four wide column">
+								<label for="firstname" class="ui blue medium header">
+									First Name:
+								</label>
+							</div>
+
+							<div class="ui input eight wide column">
+
+								<input required name="firstName" type="text" id="firstname">
+							</div>
+
+						</div>
+
+						<div class="row" style="margin-bottom: 0; margin-top: 0;">
+							<div class="four wide column">
+								<label for="lastName" class="ui blue medium header">
+												 		Last Name:
+												 	</label>
+							</div>
+
+							<div class="ui input eight wide column">
+
+								<input required name="lastName" type="text" id="lastname">
+							</div>
+
+						</div>
+
+						<div class="row" style="margin-bottom: 0; margin-top: 0;">
+							<div class="uifour wide column">
+								<label for="cnic" class="ui blue medium header">
+												 		CNIC:
+								</label>
+							</div>
+
+							<div class="ui input eight wide column">
+
+								<input name="cnic" type="text" id="cnic">
+							</div>
+
+						</div>
+
+						<div class="row" style="margin-bottom: 0; margin-top: 0;">
+							<div class="four wide column">
+								<label for="phone" class="ui blue medium header">
+												 		Phone:
+								</label>
+							</div>
+
+							<div class="ui input eight wide column">
+
+								<input required name="phone" type="text" id="phone">
+							</div>
+
+						</div>
+
+						<div class="row" style="margin-bottom: 0; margin-top: 0;">
+							<div class="four wide column">
+								<label for="gender" class="ui blue medium header">
+													   	    	Gender:    
+
+													   	    </label>
+							</div>
+
+
+							<div class="eight wide column">
+								<select required name="gender" id="gender" placeholder="Gender">
+			                       <option value = "M">M</option>
+			                       <option value = "F">F</option>
+			                    </select>
+
+							</div>
+
+						</div>
+
+						<div class="row" style="margin-bottom: 0; margin-top: 0;">
+							<div class="four wide column">
+
+								<label for="enter_Date" class="ui blue medium header" id="date1">Date of Birth:</label>
+
+							</div>
+
+							<div class="ui input eight wide column">
+								<input required name="birthDate" type="date" id="enter_Date" placeholder="Date">
+							</div>
+						</div>
+
+						<div class="row" style="margin-bottom: 0; margin-top: 0;">
+							<div class="four wide column">
+								<label for="address" class="ui blue medium header">
+									Address
+								</label>
+							</div>
+
+							<div class="ui input eight wide column">
+
+								<input name="address" type="text" id="address">
+							</div>
+
+						</div>
+
+
+
+						<div class="ui center aligned	 container" style="margin-bottom: 30px">
+							<button style="margin-top: 20px;" type = "button" class="ui  compact  blue inverted massive button column center aligned" id = "submitButton">
+				            Add
+				            </button>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<script>
+
+	    function displayMessage(type, msg){
+    		if (type === "success"){
+    			var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+    		}
+
+    		else if (type === "error"){
+    			var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+    		}
+    	}
+
+    	function missingFieldMessage(field){
+    		displayMessage("error", "Please enter a value for " + field);
+    	}
+
+		async function handleSend(e){
+			e.preventDefault();
+			// send post request
+			console.log("button clicked")
+			var firstname = document.getElementById("firstname").value
+			var lastname = document.getElementById("lastname").value
+			var cnic = document.getElementById("cnic").value
+			var phone = document.getElementById("phone").value
+			var gender = document.getElementById("gender").value
+			var dob = document.getElementById("enter_Date").value
+			var address = document.getElementById("address").value
+ 
+
+			var mandatory = {"First Name": firstname, "Last Name": lastname, "Phone":phone, "Gender":gender, "Address": address};
+
+			for(var key in mandatory){
+				if(mandatory[key] == ""){
+					missingFieldMessage(key);
+					return;
+				}
+			}
+
+
+
+			var data = {
+				firstname: firstname,
+				lastname: lastname,
+				cnic: cnic,
+				phone: phone,
+				gender: gender,
+				address: address
+			};
+
+			if (dob){
+				data.birthDate = dob;
+			}
+
+			console.log(data);
+
+			$.ajax({
+			type:"POST",
+			url: "/receptionist/newPatient",
+			data: data,
+			success: function(response){
+				console.log(response);
+				if (response == "-1"){
+					displayMessage("error", "There is already a patient with this phone number.");
+				}
+				if (response == "-2"){
+					displayMessage("error", "Error adding patient to database.");
+				}
+				else if (response == "1") {
+					displayMessage("success", "Successfully added patient to database.");
+
+					$("#firstname").val("");
+                    $("#lastname").val("");
+                    $("#cnic").val("");
+                    $("#phone").val("");
+                    $("#address").val("");
+                    $("#enter_Date").val("");
+                    $("#gender").val("");
+
+				}
+			},
+			error: function(){
+				displayMessage("error", "Error in communicating with server.");
+			}
+			})
+		}
+
+		$(document).ready(function(){
+		$("#submitButton").click(handleSend)
+			
+		})
+	</script>
+
+<% include ../partials/footer %>

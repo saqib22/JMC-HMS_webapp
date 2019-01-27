@@ -1,0 +1,135 @@
+<% include ../partials/header %>
+<% if (currentUser.userType === "Pharmacist"){ %>
+<% include ./pharmacistSideBar %>
+<% } else {%>
+<% include ../Admin/adminSideBar %>
+<% } %>
+
+<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.0.4/fuse.min.js"></script>
+
+<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script>
+
+    <div class="ui center aligned container">
+        <h1 class="ui massive blue header very padded" style="margin:40px;"> Inventory </h1>
+        <div class="ui section divider"></div>
+
+            <div class = "ui big icon input">
+            <input type = "text" id = "searchBar" placeholder = "Enter a medicine name">
+            <i class="search icon"></i>
+            </div>
+
+            <div id = "total_cost" style = "margin-top:10px;" class = 'ui raised segment'>
+            </div>
+            <div id = "total" style = "margin-top:10px;" class = 'ui raised segment'>
+            </div>
+
+
+
+            <div id = "tableArea">
+
+            </div>
+
+    </div>
+
+
+
+    <script>
+        var fuse;
+        var mainTable = '';
+
+        function markRed(){
+            var table = document.getElementById('medicine-table');
+            for (var i = 1, row; row = table.rows[i]; i++) {
+                if (parseInt(row.cells[1].innerHTML) <= 5){
+                    row.cells[1].style.backgroundColor = "red";
+                }
+            }
+        }
+
+        function handleType(){
+            var text = searchBar.value;
+            console.log(text);
+            var result = fuse.search(text);
+
+            if (result.length > 0){
+                // Create divs for that medicine
+
+                var start = '<table class = "ui celled table" id = "medicine-table"><thead><tr><th>Name</th><th>Quantity</th><th>Sale Price (Rs./unit)</th></tr></thead>';
+
+
+                var inner = ""
+                    result.forEach((medicine)=>{
+                        inner += "<tr><td>"+medicine.name+"</td><td>"+medicine.quantity+"</td><td>"+medicine.salePrice+'</td></tr>'
+                })
+
+                var end = "</table>"
+
+                document.getElementById("tableArea").innerHTML = start + inner + end;
+
+            }
+            else {
+                document.getElementById('tableArea').innerHTML = mainTable;
+            }
+            markRed();
+        }
+
+        $(document).ready(function(){
+            $("#searchBar").val("");
+
+
+            $.ajax({
+                    type:"GET",
+                    url: "/pharmacists/getMedicines",
+                    success: function(response){
+                        console.log(response);
+                        var options = {
+                          shouldSort: true,
+                          threshold: 0.25,
+                          location: 0,
+                          distance: 100,
+                          maxPatternLength: 32,
+                          minMatchCharLength: 1,
+                          keys: [
+                            "name"
+                        ]
+                        };
+                        fuse = new Fuse(response, options);
+
+                        // generate main table
+
+                        var mainTableHead = '<table class = "ui celled table" id = "medicine-table"><thead><tr><th>Name</th><th>Quantity</th><th>Sale Price (Rs./unit)</th></tr></thead>';
+
+                        var mainTableBody = '';
+                        var totalInventory = 0;
+                        var totalCost = 0;
+                        var table = document.getElementById('tableArea');
+                        if (response.length > 0){
+                            response.forEach((medicine)=>{
+                                totalInventory += parseInt(medicine.quantity) * parseInt(medicine.salePrice);
+                                totalCost += parseInt(medicine.quantity) * parseInt(medicine.costPrice);
+                                mainTableBody += '<tr><td>' + medicine.name + '</td><td>' + medicine.quantity + '</td><td>' + medicine.salePrice + '</td></tr>'
+                            })
+                            mainTable += mainTableHead + mainTableBody + '</table>';
+                        } else {
+                            mainTable = "";
+                        }
+                        table.innerHTML = mainTable;
+                        markRed();
+                        document.getElementById('total').innerHTML = '<h3 class = "ui header">Total Inventory Sale Price: <b>' + totalInventory + ' Rs.</b></h3>';
+
+                        document.getElementById('total_cost').innerHTML = '<h3 class = "ui header">Total Inventory Cost Price: <b>' + totalCost + ' Rs.</b></h3>';
+
+                    }
+            });
+
+
+
+            var searchBar = document.getElementById("searchBar");
+            searchBar.value = "";
+            searchBar.addEventListener("input", handleType);
+
+        })
+    </script>
+    <% include ../partials/footer %>
+
+

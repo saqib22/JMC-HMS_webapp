@@ -1,0 +1,118 @@
+<% include ../partials/header %>
+<% if (currentUser.userType === "Pharmacist"){ %>
+<% include ./pharmacistSideBar %>
+<% } else {%>
+<% include ../Admin/adminSideBar %>
+<% } %>
+<div class="ui center aligned container">
+    <h1 class="ui massive blue header very padded" style="margin:20px;"> Sales Info </h1>
+    <div class="ui section divider"></div>
+    <div id = "messageArea"></div>
+
+    <div class = "ui large right pointing blue label"><label for="startDate">From: </label></div>
+    <div class = "ui large input">
+    <input id = "startDate" type="date" name="startDate" placeholder = "" />
+    </div>
+
+    <div class = "ui large right pointing blue label"><label for="endDate">To: </label></div>
+    <div class = "ui large input">
+    <input id = "endDate" type="date" name="endDate" placeholder = "Select Month" />
+    </div>
+
+    <button class = "ui blue inverted button" onClick = "onSearch()">Search</button>
+    <div class = "ui divider"></div>
+
+    <div style = "margin-top: 50px;"id = "loader" class="ui disabled massive  loader"></div>
+
+    <div id = "tableArea">
+
+    </div>
+
+    
+
+</div>
+
+
+<% include ../partials/footer %>
+
+<script>
+
+function displayMessage(type, msg){
+            if (type === "success"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 3000);
+            }
+            else if (type === "error"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 3000);
+            }
+        }
+
+function onSearch(){
+
+    
+    var table = document.getElementById('tableArea');
+    table.innerHTML = "";
+    $("#loader").removeClass('disabled');
+    $("#loader").addClass('active');
+
+    // get start and end Date
+    var startDate = document.getElementById("startDate").value;
+    var endDate = document.getElementById("endDate").value;
+
+    // get appointments
+    $.ajax({
+                type: "GET",
+                url: "/pharmacists/sales?startDate=" + startDate + "&endDate=" + endDate,
+                success: function(response){
+                    console.log("response:"); console.log(response);
+                    if (response.length > 0){
+                        var tableHead = '<table class = "ui celled table" id = "share-table"><thead><tr><th>Name</th><th>Quantity Sold</th><th>Total Cost Price</th><th>Total Sale Price:</th></tr></thead>'
+                        var tableBody = "";
+                        var totalQuantity = 0;
+                        var totalSales = 0;
+                        var totalCost = 0;
+                        response.forEach((medicine)=>{
+                            totalQuantity += parseInt(medicine.quantity);
+                            totalSales += parseInt(medicine.sales);
+                            totalCost += parseInt(medicine.costs)
+
+                            tableBody += '<tr><td>' + medicine.name + '</td><td>' + medicine.quantity + '</td><td>' + medicine.costs + '</td><td>' + medicine.sales + '</td></tr>'
+                        })
+
+                        var totalRow = '<tr><td><strong>Totals</strong></td><td>' + totalQuantity + '</td><td>' + totalCost + '</td><td>' + totalSales + '</td></tr>' 
+
+                        table.innerHTML = tableHead + tableBody + totalRow + '</table>';
+                    } else {
+                        table.innerHTML = '';
+                        displayMessage("error", "No records found for the specified dates.");
+                    }
+
+                    $("#loader").addClass('disabled');
+                    $("#loader").removeClass('active');
+
+                },
+                error: function(){
+                    displayMessage("error", "Error communicating with server.");
+                    $("#loader").addClass('disabled');
+                    $("#loader").removeClass('active');
+                }
+    })
+}
+
+$(document).ready(function(){
+    var start = new Date(new Date().setDate(new Date().getDate()-5)).toISOString();
+    start = start.slice(0,(start.indexOf('T')))
+
+    var end = new Date().toISOString();
+    end = end.slice(0,(end.indexOf('T')))
+
+    $('#startDate').val(start);
+    $('#endDate').val(end);
+    onSearch();
+    
+
+});
+</script>

@@ -1,0 +1,53 @@
+<% include ../partials/header %>
+<% if (currentUser.userType === "Receptionist"){ %>
+<% include ./receptionistSideBar %>
+<% } else {%>
+<% include ../Admin/adminSideBar %>
+<% } %>
+
+
+<style>
+.doctor-name
+{
+  white-space:nowrap;
+  width:237px;
+  vertical-align:top;
+}
+
+
+</style>
+
+    <div class="ui text container center aligned">
+        <h1 class="ui massive very padded blue  header" style = "margin: 10px;"> Doctors </h1>
+        <div class="ui section divider"></div>
+        <table class = "ui celled table">
+            <thead>
+                <tr>
+                    <th> Name </th>
+                    <th> Specialization </th>
+                    <th> Cell No. </th>
+                    <th> CNIC </th>
+                    <th> Address </th>
+                    <th> Dues </th>
+                </tr>
+            </thead>
+        <% if (doctors.length !== 0) { %>
+            <% doctors.forEach((doctor)=>{ %>
+                <tr>
+                    <td class = "doctor-name"> <%=doctor.firstName + " " + doctor.lastName%> </td>
+                    <td> <%=doctor.specialization %> </td>
+                    <td> <%=doctor.phone%> </td>
+                    <td> <%=doctor.cnic%> </td>
+                    <% if (doctor.address){ %>
+                        <td> <%=doctor.address%> </td>
+                    <% } else {%>
+                        <td> N/A </td>
+                    <% } %>
+                    <td> <%= doctor.dues %> </td>
+                </tr>
+            <% }); %>
+                
+        <% } %>
+        </table>
+
+<% include ../partials/footer %>

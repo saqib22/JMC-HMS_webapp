@@ -1,0 +1,214 @@
+<% include ../partials/header %>
+<% include ./adminSideBar%>
+
+<div class="ui center aligned container">
+    <h1 class="ui massive blue header very padded" style="margin:10px;"> View Finances </h1>
+
+    <div class="ui section divider"></div>
+
+    <div id = "messageArea"></div>
+        
+
+	<div class = "ui large right pointing blue label"><label for="startDate">From: </label></div>
+	<div class = "ui large input">
+	<input id = "startDate" type="date" name="startDate" placeholder = "" />
+	</div>
+
+    <div class = "ui large right pointing blue label"><label for="endDate">To: </label></div>
+    <div class = "ui large input">
+    <input id = "endDate" type="date" name="endDate" placeholder = "Select Month" />
+    </div>
+
+    <button class = "ui blue inverted button" onClick = "selected()">Search</button>
+    <div class = "ui divider"></div>
+
+  <div style = "margin-top: 50px;"id = "loader" class="ui disabled massive  loader"></div>
+  
+
+	<div id = "totalArea">
+
+	</div>
+
+    <div id = "OPD">
+
+    </div>
+
+    <div id = "lab">
+
+    </div>
+
+    <div id = "pharmacy">
+
+    </div>
+
+    <div id = "expenses">
+
+    </div>
+</div>
+
+
+
+
+
+
+<script>
+function selected(){
+	function displayMessage(type, msg){
+    		if (type === "success"){
+    			var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+    		}
+
+    		else if (type === "error"){
+    			var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+    		}
+    }
+
+    document.getElementById('totalArea').innerHTML = "";
+    document.getElementById('OPD').innerHTML = "";
+    document.getElementById('lab').innerHTML = "";
+    document.getElementById('pharmacy').innerHTML = "";
+    document.getElementById('expenses').innerHTML = "";
+
+    $("#loader").removeClass('disabled');
+    $("#loader").addClass('active');
+
+
+
+	var startDate = document.getElementById("startDate").value;
+    var endDate = document.getElementById("endDate").value;
+
+	$.ajax({
+                type:"GET",
+                url: "/admin/finances?startDate="+startDate+ "&endDate=" + endDate,
+                success: function(response){
+                    var totals = response.totals;
+                    var details = response.details;
+
+                    var totalArea = document.getElementById("totalArea");
+                    var totalHead = '<h2 class = "ui center aligned header">Totals</h2><table class = "ui celled table"><thead><tr><th>OPD</th><th>Lab</th><th>Pharmacy</th><th>Expenses</th><th>Profit/Loss</th></tr></thead>';
+
+                    var total = 0;
+                    if (parseInt(totals.opd)){total += parseInt(totals.opd);}
+                    if (parseInt(totals.lab)){total += parseInt(totals.lab);}
+                    if (parseInt(totals.pharmacy)){total += parseInt(totals.pharmacy);}
+                    if (parseInt(totals.expenses)){total += parseInt(totals.expenses);}
+
+                    for (var key in totals){
+                        if (!(totals[key])){
+                            totals[key] = 0;
+                        }
+                    }
+
+                    var totalBody = '<tr><td>' + totals.opd + '</td><td>' + totals.lab + '</td><td>' + totals.pharmacy + '</td><td>' + totals.expenses +'</td><td>'+ total +'</td></tr>'
+                    totalArea.innerHTML = totalHead + totalBody + '</table>' + '<div class = "ui divider"></div>';
+
+                    var OPD = document.getElementById("OPD");
+                    if (totals.opd > 0){
+                        var opdHead = '<h2 class = "ui center aligned header">OPD</h2><table class = "ui celled table"><thead><tr><th>Doctor</th><th>Patients</th><th>Doctor Share</th><th>Hospital Share</th><th>Total</th></tr></thead>';
+
+                        opdBody = "";
+                        var opd_totalPatients = 0;
+                        var opd_totalShare = 0;
+                        var opd_totalHospitalShare = 0;
+                        var opd_total = 0;
+                        details.opd_details.forEach((row)=>{
+
+                            opd_totalPatients += parseInt(row.totalPatients);
+                            opd_totalShare += parseInt(row.doctorShare);
+                            opd_totalHospitalShare += parseInt(row.hospitalShare);
+                            opd_total += parseInt(row.total);
+
+                            opdBody += '<tr><td>' + row.firstName + ' ' + row.lastName +'</td><td>' + row.totalPatients + '</td><td>' + row.doctorShare + '</td><td>' + row.hospitalShare + '</td><td>' + row.total + '</td></tr>';
+
+                        });
+                        opdBody += '<tr><td><strong>Total</strong></td><td>' + opd_totalPatients + '</td><td>' + opd_totalShare + '</td><td>' + opd_totalHospitalShare + '</td><td>' + opd_total + '</td></tr>';
+                        OPD.innerHTML = opdHead + opdBody + '</table>';
+                    }
+                    else {
+                        OPD.innerHTML = ""
+                    }
+                    var lab = document.getElementById("lab");
+                    if(totals.lab > 0){
+                        var labHead = '<h2 class = "ui center aligned header">Lab</h2><table class = "ui celled table"><thead><tr><th>Doctor</th><th>Tests</th><th>Doctor Share</th><th>Hospital Share</th><th>Total</th></tr></thead>';
+
+                        labBody = "";
+
+                        
+                        var lab_totalTests = 0;
+                        var lab_totalShare = 0;
+                        var lab_totalHospitalShare = 0;
+                        var lab_total = 0;
+
+                        details.lab_details.forEach((row)=>{
+
+                            lab_totalTests += parseInt(row.totalTests);
+                            lab_totalShare += parseInt(row.labShare);
+                            lab_totalHospitalShare += parseInt(row.hospitalShare);
+                            lab_total += parseInt(row.labFee);
+
+                            labBody += '<tr><td>' + row.firstName + ' ' + row.lastName +'</td><td>' + row.totalTests + '</td><td>' + row.labShare + '</td><td>' + row.hospitalShare + '</td><td>' + row.labFee + '</td></tr>';
+                        });
+                        labBody += '<tr><td><strong>Total</strong></td><td>' + lab_totalTests + '</td><td>' + lab_totalShare + '</td><td>' + lab_totalHospitalShare + '</td><td>' + lab_total + '</td></tr>';
+                        lab.innerHTML = labHead + labBody + '</table>';
+                    }
+                    else {
+                        lab.innerHTML = "";
+                    }
+                    var pharmacy = document.getElementById("pharmacy");
+                    if (totals.pharmacy > 0){
+                        var pharmacyHead = '<h2 class = "ui center aligned header">Pharmacy</h2><table class = "ui celled table"><thead><tr><th>Total Cost Price</th><th>Total Sale Price</th><th>Total Profit</th></tr></thead>';
+
+                        pharmacyBody = "";
+                        details.pharmacy_details.forEach((row)=>{
+                            pharmacyBody += '<tr><td>' + row.totalCost +'</td><td>' + row.totalSales + '</td><td>' + row.totalProfit + '</td></tr>';
+                        });
+                        pharmacy.innerHTML = pharmacyHead + pharmacyBody + '</table>';
+                    }
+                    else {
+                        pharmacy.innerHTML = "";
+                    }
+
+                    var expenses = document.getElementById("expenses");
+                    if (totals.expenses > 0){
+                        var expensesHead = '<h2 class = "ui center aligned header">Expenses</h2><table class = "ui celled table"><thead><tr><th>Meal/Tea</th><th>Gas</th><th>Electricity</th><th>Salaries</th><th>Rent</th><th>Total</th></tr></thead>';
+
+                        expensesBody = "";
+                        details.expenses_details.forEach((row)=>{
+                            expensesBody += '<tr><td>' + row.meal_tea + '</td><td>' + row.gas + '</td><td>' + row.electricity + '</td><td>' + row.salary + '</td><td>' + row.rent  + '</td><td>' + totals.expenses + '</td></tr>';
+                        })
+                        expenses.innerHTML = expensesHead + expensesBody + '</table>'
+                    }
+                    else {
+                        expenses.innerHTML = "";
+                    }
+                $("#loader").addClass('disabled');
+                $("#loader").removeClass('active');
+
+            },
+
+            error: function(){
+            	displayMessage("error", "Error in communicating with server.");
+                $("#loader").addClass('disabled');
+                $("#loader").removeClass('active');
+            }
+            });
+
+}
+$(document).ready(function(){
+    var start = new Date(new Date().setDate(new Date().getDate()-5)).toISOString();
+    start = start.slice(0,(start.indexOf('T')))
+
+    var end = new Date().toISOString();
+    end = end.slice(0,(end.indexOf('T')))
+
+    $('#startDate').val(start);
+    $('#endDate').val(end);
+    selected();
+});
+</script>
+
+<% include ../partials/footer %>

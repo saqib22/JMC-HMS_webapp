@@ -1,0 +1,223 @@
+<% include ../partials/header %>
+<% include ./receptionistSideBar %>
+
+    <div class="ui  center aligned container" style="margin:10px 20px;">
+
+        <h1 class="ui massive blue header very padded">Create Appointment </h1>
+
+        <div class="ui divider"></div>
+        <div id="messageArea"></div>
+        <div class="left aligned ui blue raised segment" style="width:60%; margin: auto;">
+
+            <form action = "" method = "POST">
+                <div class="ui form">
+                    <div class="ui grid" style="margin: auto;">
+                        <div class="row" style="margin-bottom: 0; margin-top: 0;">
+                            <div class="four wide column">
+
+                                <label for="startDate" class="ui blue medium header">Start Time:</label>
+
+                            </div>
+
+                            <div class="eight wide column">
+                                <input name="startDate" type="datetime-local" id="startDate" placeholder="Start Time">
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-bottom: 0; margin-top: 0;">
+                            <div class="four wide column">
+
+                                <label for="endDate" class="ui blue medium header">End Time:</label>
+
+                            </div>
+
+                            <div class="eight wide column">
+                                <input name="endDate" type="datetime-local" id="endDate" placeholder="End Time">
+                            </div>
+                        </div>
+
+
+
+                        <div class="row" style="margin-bottom: 0; margin-top: 0;">
+                            <div class="four wide column">
+                                <label for="patientCell" class="ui blue medium header">
+                                    Patient Cell #:    
+                                </label>
+                            </div>
+
+
+                            <div class="six wide column">
+                                <input type="number" name="patientCell" id="patientCell">
+                            </div>
+
+                            <div class = "two wide column">
+                                <button type = "button" onClick = "searchPatient(this)" class = "ui blue inverted button">Search</button>
+                            </div> 
+
+                        </div>
+
+
+                        <div class="row" style="margin-bottom: 0; margin-top: 0;">
+                            <div class="four wide column">
+                                <label for="patientName" class="ui blue medium header">
+                                    Patient Name    
+                                </label>
+                            </div>
+
+
+                            <div class="six wide column">
+                                <input readonly type="text" name="patientName" id="patientName">
+                            </div>
+
+                        </div>
+
+
+
+
+                        <div class="row" style="margin-bottom: 0; margin-top: 0;">
+                            <div class="four wide column">
+
+                                <label for="doctor_id" class="ui blue medium header">
+                                                        Doctor     
+
+                                     </label>
+                            </div>
+
+                            <div class="eight wide column">
+
+                                <select name="doctorID" id="doctorID">
+                                        <% doctors.forEach(function(doctor){ %>
+                                            <option value = "<%=doctor.doctorID%>"> <%= doctor.firstName + " " + doctor.lastName %> </option>
+                                        <%})%>
+                                      </select>
+                            </div>
+                        </div>
+
+
+                        <div class="row" style="margin-bottom: 0; margin-top: 0;">
+                            <div class="four wide column">
+                                <label for="notes" class="ui blue medium header">
+                                              Notes:
+                                </label>
+                            </div>
+
+                            <div class="eight wide column">
+
+                                <textarea name="notes" id="notes" rows="4"></textarea>
+                            </div>
+
+                        </div>
+
+
+                        <div class="ui center aligned	 container">
+                            <button style="margin-top: 20px;" type = "button" onClick = handleSend() class="ui  compact inverted  blue massive button column center aligned ">
+                                          Create
+
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+
+    <% include ../partials/footer %>
+
+    <script>
+    var patientID = -1;
+    function displayMessage(type, msg){
+            if (type === "success"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+
+            else if (type === "error"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+        }
+
+    function searchPatient(){
+        
+        var patientCell = document.getElementById("patientCell").value;
+
+        // Search patient in DB
+        $.ajax({
+            type:"GET",
+            url: "/receptionist/patient?phone="+ patientCell,
+            success: function(response){
+                console.log(response);
+                if (response === "-1"){
+                    displayMessage("error", "Patient not found.");
+                }
+                else {
+                    displayMessage("success", "Patient retrieved.");
+                    document.getElementById("patientName").value = response.firstName + ' ' + response.lastName;
+                    patientID = response.patientID;
+                }
+            },
+            error: function(){
+                displayMessage("error", "Error in communicating with server.");
+            }
+            })
+    }
+
+    function handleSend(){
+        if(patientID === -1){
+            displayMessage("error", "Please select a patient.");
+            return;
+        }
+        var doctorID = document.getElementById('doctorID').value;
+        var startDate = document.getElementById('startDate').value;
+        var endDate = document.getElementById('endDate').value;
+        var notes = document.getElementById('notes').value;
+
+        console.log("startDate", startDate);
+        console.log("endDate", endDate);
+
+        data = {
+            patientID: patientID,
+            doctorID: doctorID,
+            startDate: startDate,
+            endDate: endDate,
+            notes: notes
+        }
+
+        // send AJAX request
+        
+        $.ajax({
+            type:"POST",
+            url: "/receptionist/appointments",
+            data: data,
+            success: function(response){
+                console.log("response:",response);
+                if (response === "-1"){
+                    displayMessage("error", "Select a patient.");
+                    return;
+                }
+                
+                console.log("success!");
+                displayMessage("success", "Successfully added appointment.");
+                $("#startDate").val("");
+                $("#endDate").val("");
+                $("#patientCell").val("");
+                $("#patientName").val("");
+                $("#doctorID").val("");
+                $("#notes").val("");
+                patientID = -1;
+                console.log("finished")
+                
+                       
+            },
+            error: function(){
+                console.log('error');
+                displayMessage("error", "Error in communicating with server.");
+            }
+            })
+
+    }
+
+    </script>

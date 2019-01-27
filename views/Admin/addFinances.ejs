@@ -1,0 +1,191 @@
+<% include ../partials/header %>
+<% include ./adminSideBar%>
+
+<div class="ui  center aligned container" style="margin:10px 0px;">
+
+        <h1 class="ui massive blue header very padded">Add Finances </h1>
+        <div class="ui divider"></div>
+        <div id = "messageArea">
+        </div>
+        <div class="left aligned ui blue raised segment" style="width:60%; margin: auto;">
+            <form method = "POST" action = "/admin/addFinance">
+                <div class="ui form">
+
+
+                    <div class="ui grid" style="margin:auto;">
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="date">Date:</label>
+                            </div>
+
+                            <div class="eight wide column">
+                            	<div class = "ui input">
+                                <input id = "date" type="date" name="date"  />
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="meal_tea">Meal/Tea:</label>
+                            </div>
+
+                            <div class="eight wide column">
+                            	<div class = "ui input">
+                                <input name = "meal_tea" type="number" id="meal_tea" required value = "0">
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="electricity">Electricity:</label>
+                            </div>
+
+                            <div class="eight wide column">
+                            	<div class = "ui input">
+                                <input name = "electricity" type="number" id="electricity" required value = "0">
+                                </div>
+                            </div>
+
+                        </div>
+
+                         <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="gas">Gas:</label>
+                            </div>
+
+                            <div class="eight wide column">
+                            	<div class = "ui input">
+                                <input name = "gas" type="number" id="gas" required value = "0">
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="salary">Salaries:</label>
+                            </div>
+
+                            <div class="eight wide column">
+                                <div class = "ui input">
+                                <input name = "salary" type="number" id="salary" required value = "0">
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="rent">Rent:</label>
+                            </div>
+
+                            <div class="eight wide column">
+                                <div class = "ui input">
+                                <input name = "rent" type="number" id="rent" required value = "0">
+                                </div>
+                            </div>
+
+                        </div>
+
+
+
+                        <div class="ui center aligned  container">
+                            <button style="margin-top: 20px;" id = "submitButton" type="button" class="ui  compact  blue inverted massive button column center aligned ">
+                                Submit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+
+    	function displayMessage(type, msg){
+    		if (type === "success"){
+    			var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+    		}
+
+    		else if (type === "error"){
+    			var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+    		}
+    	}
+
+    	function handleSend(){
+    		console.log("Sending...");
+
+    		var date = document.getElementById("date").value
+    		var meal_tea = document.getElementById("meal_tea").value;
+    		var electricity = document.getElementById("electricity").value;
+    		var gas = document.getElementById("gas").value;
+            var salary = document.getElementById("salary").value;
+            var rent = document.getElementById("rent").value;
+
+
+    		if (date == "" ||  meal_tea == "" || electricity == "" || gas == "" || salary == "" || rent == ""){
+    		displayMessage("error", "Please fill in all values");
+    		return;
+    		}
+
+
+    		data = {
+    			date: date,
+    			meal_tea: meal_tea,
+    			electricity: electricity,
+    			gas: gas,
+                salary: salary,
+                rent: rent
+    		};
+    		$.ajax({
+                type:"POST",
+                url: "/admin/addFinances",
+                data: data,
+                success: function(response){
+                	console.log(response);
+                	if (response === "-1"){
+                		displayMessage("error", "There already exists an entry for that date combination.")
+                		return;
+                	}
+
+                	if (response === "1"){
+                		displayMessage("success", "Finance entry successfully added.");
+
+                		$("#date").val("");
+                        $("#electricity").val("");
+                        $("#gas").val("");
+                        $("#meal_tea").val("");
+                        $("#salary").val("");
+                        $("#rent").val("");
+                	}
+
+                	if (response === "-3"){
+                		displayMessage("error", "Error adding to database.");
+                	}
+
+                },
+                error: function(){
+                	displayMessage("error", "Error in communicating with server.");
+                }
+    	});
+    	}
+
+    	$(document).ready(function(){
+            $("#submitButton").click(handleSend)
+        });
+    </script>
+<% include ../partials/footer %>

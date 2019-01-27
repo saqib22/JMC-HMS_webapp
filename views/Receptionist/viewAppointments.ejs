@@ -1,0 +1,42 @@
+<% include ../partials/header %>
+<% include ./receptionistSideBar %>
+
+
+    <div class="ui center aligned container">
+        <h1 class="ui massive blue header very padded" style="margin:40px;"> Upcoming Appointments </h1>
+        <div class="ui section divider"></div>
+
+
+
+            <table class = "ui celled table">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Doctor Name</th>
+                    <th>Patient Cell</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                </tr>
+            </thead>
+
+            <% appointments.forEach((appointment)=>{ %>
+                <tr>
+                    <td> <%=appointment.Patient.firstName + ' ' + appointment.Patient.lastName%> </td>
+                    <td> <%=appointment.Doctor.firstName + ' ' + appointment.Doctor.lastName %> </td>
+                    <td> <%=appointment.Patient.phone%> </td>
+                    <td> <%=appointment.startDate%> </td>
+                    <td> <%=appointment.endDate%> </td>
+                </tr>
+            <% })%>
+
+
+            </table>
+
+    </div>
+
+
+
+    
+    <% include ../partials/footer %>
+
+

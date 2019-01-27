@@ -1,0 +1,581 @@
+<% include ../partials/header %>
+<% include ./pharmacistSideBar %>
+
+<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.0.4/fuse.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<style type="text/css">
+    *[contenteditable] { border-radius: 0.25em; min-width: 1em; outline: 0; }
+
+    *[contenteditable] { cursor: pointer; }
+
+    *[contenteditable]:hover, *[contenteditable]:focus, td:hover *[contenteditable], td:focus *[contenteditable], img.hover { background: #DEF; box-shadow: 0 0 1em 0.5em #DEF; }
+
+    header h1 { border-radius: 0.25em; color: #000; margin: 0 0 1em; padding: 0.5em 0; }
+    header address { float: left; font-size: 90%; font-style: normal; line-height: 1.25; margin: 0 1em 1em 0; }
+    header address p { margin: 0 0 0.25em; }
+    header span, header img { display: block; float: right; }
+    header span { margin: 0 0 1em 1em; max-height: 25%; max-width: 60%; position: relative; }
+    header img { width: 200px; height: 80px; }
+
+    table.balance th, table.balance td { width: 50%; }
+    table.balance th{width: 50%;text-align: right;}
+    table.balance td{width: 10%;}
+    table.balance td { text-align: right; }
+    table.meta, table.balance { float: right; width: 36%; }
+    table.meta:after, table.balance:after { clear: both; content: ""; display: table; }
+    
+    table.meta th{float:right;}
+    table.meta td{width: 10%;text-align: right;}
+
+    .btn-success{
+        padding: 5px;
+        
+    }
+
+    #icon{
+        padding-right: 5px;
+    }
+
+    #icon:hover{
+        transition: 
+    }
+
+    .sellBtn{
+        padding: 0px;
+    }
+
+</style>
+
+<script>
+        /* @license 
+        * jQuery.print, version 1.5.1
+        *  (c) Sathvik Ponangi, Doers' Guild
+        * Licence: CC-By (http://creativecommons.org/licenses/by/3.0/)
+        *--------------------------------------------------------------------------*/
+        (function ($) {
+            "use strict";
+            // A nice closure for our definitions
+            function getjQueryObject(string) {
+                // Make string a vaild jQuery thing
+                var jqObj = $("");
+                try {
+                    jqObj = $(string)
+                        .clone();
+                } catch (e) {
+                    jqObj = $("<span />")
+                        .html(string);
+                }
+                return jqObj;
+            }
+
+            function printFrame(frameWindow, content, options) {
+                // Print the selected window/iframe
+                var def = $.Deferred();
+                try {
+                    frameWindow = frameWindow.contentWindow || frameWindow.contentDocument || frameWindow;
+                    var wdoc = frameWindow.document || frameWindow.contentDocument || frameWindow;
+                    if(options.doctype) {
+                        wdoc.write(options.doctype);
+                    }
+                    wdoc.write(content);
+                    wdoc.close();
+                    var printed = false;
+                    var callPrint = function () {
+                        if(printed) {
+                            return;
+                        }
+                        // Fix for IE : Allow it to render the iframe
+                        frameWindow.focus();
+                        try {
+                            // Fix for IE11 - printng the whole page instead of the iframe content
+                            if (!frameWindow.document.execCommand('print', false, null)) {
+                                // document.execCommand returns false if it failed -http://stackoverflow.com/a/21336448/937891
+                                frameWindow.print();
+                            }
+                            // focus body as it is losing focus in iPad and content not getting printed
+                            $('body').focus();
+                        } catch (e) {
+                            frameWindow.print();
+                        }
+                        frameWindow.close();
+                        printed = true;
+                        def.resolve();
+                    }
+                    // Print once the frame window loads - seems to work for the new-window option but unreliable for the iframe
+                    $(frameWindow).on("load", callPrint);
+                    // Fallback to printing directly if the frame doesn't fire the load event for whatever reason
+                    setTimeout(callPrint, options.timeout);
+                } catch (err) {
+                    def.reject(err);
+                }
+                return def;
+            }
+
+            function printContentInIFrame(content, options) {
+                var $iframe = $(options.iframe + "");
+                var iframeCount = $iframe.length;
+                if (iframeCount === 0) {
+                    // Create a new iFrame if none is given
+                    $iframe = $('<iframe height="0" width="0" border="0" wmode="Opaque"/>')
+                        .prependTo('body')
+                        .css({
+                            "position": "absolute",
+                            "top": -999,
+                            "left": -999
+                        });
+                }
+                var frameWindow = $iframe.get(0);
+                return printFrame(frameWindow, content, options)
+                    .done(function () {
+                        // Success
+                        setTimeout(function () {
+                            // Wait for IE
+                            if (iframeCount === 0) {
+                                // Destroy the iframe if created here
+                                $iframe.remove();
+                            }
+                        }, 1000);
+                    })
+                    .fail(function (err) {
+                        // Use the pop-up method if iframe fails for some reason
+                        console.error("Failed to print from iframe", err);
+                        printContentInNewWindow(content, options);
+                    })
+                    .always(function () {
+                        try {
+                            options.deferred.resolve();
+                        } catch (err) {
+                            console.warn('Error notifying deferred', err);
+                        }
+                    });
+            }
+
+            function printContentInNewWindow(content, options) {
+                // Open a new window and print selected content
+                var frameWindow = window.open();
+                return printFrame(frameWindow, content, options)
+                    .always(function () {
+                        try {
+                            options.deferred.resolve();
+                        } catch (err) {
+                            console.warn('Error notifying deferred', err);
+                        }
+                    });
+            }
+
+            function isNode(o) {
+                /* http://stackoverflow.com/a/384380/937891 */
+                return !!(typeof Node === "object" ? o instanceof Node : o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName === "string");
+            }
+            $.print = $.fn.print = function () {
+                // Print a given set of elements
+                var options, $this, self = this;
+                // console.log("Printing", this, arguments);
+                if (self instanceof $) {
+                    // Get the node if it is a jQuery object
+                    self = self.get(0);
+                }
+                if (isNode(self)) {
+                    // If `this` is a HTML element, i.e. for
+                    // $(selector).print()
+                    $this = $(self);
+                    if (arguments.length > 0) {
+                        options = arguments[0];
+                    }
+                } else {
+                    if (arguments.length > 0) {
+                        // $.print(selector,options)
+                        $this = $(arguments[0]);
+                        if (isNode($this[0])) {
+                            if (arguments.length > 1) {
+                                options = arguments[1];
+                            }
+                        } else {
+                            // $.print(options)
+                            options = arguments[0];
+                            $this = $("html");
+                        }
+                    } else {
+                        // $.print()
+                        $this = $("html");
+                    }
+                }
+                // Default options
+                var defaults = {
+                    globalStyles: true,
+                    mediaPrint: false,
+                    stylesheet: null,
+                    noPrintSelector: ".no-print",
+                    iframe: true,
+                    append: null,
+                    prepend: null,
+                    manuallyCopyFormValues: true,
+                    deferred: $.Deferred(),
+                    timeout: 750,
+                    title: null,
+                    doctype: '<!doctype html>'
+                };
+                // Merge with user-options
+                options = $.extend({}, defaults, (options || {}));
+                var $styles = $("");
+                if (options.globalStyles) {
+                    // Apply the stlyes from the current sheet to the printed page
+                    $styles = $("style, link, meta, base, title");
+                } else if (options.mediaPrint) {
+                    // Apply the media-print stylesheet
+                    $styles = $("link[media=print]");
+                }
+                if (options.stylesheet) {
+                    // Add a custom stylesheet if given
+                    $styles = $.merge($styles, $('<link rel="stylesheet" href="' + options.stylesheet + '">'));
+                }
+                // Create a copy of the element to print
+                var copy = $this.clone();
+                // Wrap it in a span to get the HTML markup string
+                copy = $("<span/>")
+                    .append(copy);
+                // Remove unwanted elements
+                copy.find(options.noPrintSelector)
+                    .remove();
+                // Add in the styles
+                copy.append($styles.clone());
+                // Update title
+                if (options.title) {
+                    var title = $("title", copy);
+                    if (title.length === 0) {
+                        title = $("<title />");
+                        copy.append(title);                
+                    }
+                    title.text(options.title);            
+                }
+                // Appedned content
+                copy.append(getjQueryObject(options.append));
+                // Prepended content
+                copy.prepend(getjQueryObject(options.prepend));
+                if (options.manuallyCopyFormValues) {
+                    // Manually copy form values into the HTML for printing user-modified input fields
+                    // http://stackoverflow.com/a/26707753
+                    copy.find("input")
+                        .each(function () {
+                            var $field = $(this);
+                            if ($field.is("[type='radio']") || $field.is("[type='checkbox']")) {
+                                if ($field.prop("checked")) {
+                                    $field.attr("checked", "checked");
+                                }
+                            } else {
+                                $field.attr("value", $field.val());
+                            }
+                        });
+                    copy.find("select").each(function () {
+                        var $field = $(this);
+                        $field.find(":selected").attr("selected", "selected");
+                    });
+                    copy.find("textarea").each(function () {
+                        // Fix for https://github.com/DoersGuild/jQuery.print/issues/18#issuecomment-96451589
+                        var $field = $(this);
+                        $field.text($field.val());
+                    });
+                }
+                // Get the HTML markup string
+                var content = copy.html();
+                // Notify with generated markup & cloned elements - useful for logging, etc
+                try {
+                    options.deferred.notify('generated_markup', content, copy);
+                } catch (err) {
+                    console.warn('Error notifying deferred', err);
+                }
+                // Destroy the copy
+                copy.remove();
+                if (options.iframe) {
+                    // Use an iframe for printing
+                    try {
+                        printContentInIFrame(content, options);
+                    } catch (e) {
+                        // Use the pop-up method if iframe fails for some reason
+                        console.error("Failed to print from iframe", e.stack, e.message);
+                        printContentInNewWindow(content, options);
+                    }
+                } else {
+                    // Use a new window for printing
+                    printContentInNewWindow(content, options);
+                }
+                return this;
+            };
+        })(jQuery);
+
+    </script>
+
+    <div class="ui center aligned container">
+        <div style="text-align: left;">
+            <button class="btn-success newInvoice"><i class="fa fa-plus-circle" id="icon"></i>New Receipt</button>
+        </div>
+
+        <div class="ui section divider"></div>
+
+            <div id = "messageArea">
+            </div>
+
+            <div id="printArea">
+                <header>
+                    <h1>Invoice</h1>
+                    <address style="text-align: left; margin-bottom: 50px;">
+                        <p>Jinnah Medical Complex<br>Opp. Union Council, Simly Dam Road, Bara Kahu, Islamabad</p><br>
+                        <p>051-2160579</p>
+                    </address>
+                    <img alt="" src="https://jmcsound.net/wp-content/uploads/2018/02/JMC-LOGO2.png">
+                </header>
+
+                <table class="meta" style="width: 100%; padding-right: 0px; margin-bottom: 40px;" cellpadding="10">
+                    <tr>
+                        <th><span>Invoice #</span></th>
+                        <td><span id = 'invoiceNumber'>101138</span></td>
+                    </tr>
+                    <tr>
+                        <th><span>Date</span></th>
+                        <td><span id="invoiceDate"></span></td>
+                    </tr>
+                </table>
+
+                <table class = "ui celled table" id = "medicine-table">
+                    <thead>
+                        <tr>
+                            <th>Medicine Name</th>
+                            <th>Stock</th>
+                            <th>Sale Price</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                </table>
+                <table class="balance" style="float: right; margin-top: 40px; margin-bottom: 60px;">
+                    <tr>
+                        <th><span>Total</span></th>
+                        <td><span data-prefix ></span><span id = "total">00.00</span></td>
+                    </tr>  
+                </table>
+            </div>
+
+            <button style="margin-top: 140px;color: #000; margin-right: 100px; ;margin-bottom:80px;float: right;" type = "button" class="ui  compact  grey inverted massive button column center aligned" id = "printInvoice">Print</button>
+
+    </div>
+
+
+
+    <script>
+        var rows = 0;
+        var medicineList;
+        function addRow(){
+            rows++;
+            var content = document.getElementById("medicine-table");
+            // Add new row
+            var selectorContent = "";
+            medicineList.forEach((medicine)=>{
+                selectorContent += '<option value =' + medicine.medicineID+ '>'+medicine.name+'</option>'
+            })
+            var select = '<select style = "width: 200px;" class = "ui input fluid" onchange="onSelect(this);" onfocus="this.selectedIndex = -1;" id ="select-' + rows + '">' + selectorContent + '</select>';
+
+            var input = '<td><input type = "number" min = "0" class = "ui input"/></td>'
+
+            var btn = '<td><button onClick = onSell(this) class = "btn-success"><i id="icon" class="fa fa-plus-circle"></i>Add Item</button></td>'
+
+            content.innerHTML += '<tr><td>' + select + '</td><td></td><td></td>' + input + '<td></td>' + btn + '</tr>'
+
+            $('#select-'+rows).select2()
+            if (medicineList.length > 0){
+                onSelect(document.getElementById('select-'+rows), medicineList[0].medicineID);
+            }   
+            
+        }
+
+        function onSell(e){
+            console.log("clicked");
+            // get siblings
+            var siblings = ($(e).parent().siblings('td'));
+            // get medicine ID
+            var select = $(siblings[0]).children()[0];
+            var medicineName = select.options[select.selectedIndex].text;
+            var medicine = fuse.search(medicineName)[0];
+            // get quantity
+            var quantityEl = $(siblings[3]).children()[0];
+            var quantity = $(siblings[3]).children()[0].value
+            console.log(quantity);
+            // make POST request
+            data = {
+                medicineID: medicine.medicineID,
+                quantity: quantity
+            };
+
+            $.ajax({
+                type:"POST",
+                url: "/pharmacists/dispatch",
+                data: data,
+                success: function(response){
+                    if(response === "-1"){
+                        // display error
+                        displayMessage("error", "Not enough stock");
+                        return
+                    }
+                    else {
+                        displayMessage("success", "Medicine sold.");
+                        quantityEl.setAttribute("readonly", true);
+                        $(e).parent().siblings('td')[3].innerHTML = quantity;
+                        fuse = new Fuse(response, options);
+                        // add price
+                        var price = $(e).parent().siblings('td')[2].innerHTML;
+                        $(e).parent().siblings('td')[4].innerHTML = parseInt(quantity) * parseInt(price);
+                        var totalPrice = $(e).parent().siblings('td')[4].innerHTML;
+                        document.getElementById('total').innerHTML = parseInt(document.getElementById('total').innerHTML) + parseInt(totalPrice);
+                        e.style.display = 'none';
+                        addRow();
+
+                    }
+                },
+                error: function(){
+                    displayMessage("error", "Error communicating with server.");
+                }
+
+        });
+
+            // display message
+            // add new row
+            
+            //e.style.display = 'none';
+            //addRow();
+
+        }
+
+        function onSelect(e, val){
+            if (val){
+                e.value = val;
+            }
+            var siblings = ($(e).parent().siblings('td'));
+            var medicine = fuse.search(e.options[e.selectedIndex].text)[0];
+            console.log(medicine);
+            siblings[0].innerHTML = medicine.quantity;
+            siblings[1].innerHTML = medicine.salePrice;
+        }
+
+
+
+        function displayMessage(type, msg){
+            if (type === "success"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+
+            else if (type === "error"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+        }
+
+
+        var fuse;
+        var options = {
+            shouldSort: true,
+            threshold: 0.25,
+            location: 0,
+            distance: 100,
+            maxPatternLength: 32,
+             minMatchCharLength: 1,
+            keys: [
+                "name"
+            ]   
+        };
+
+        function handleClick(id){
+            console.log(id);
+            var quantity = document.getElementById(id+"-quantity").value;
+            console.log(quantity);
+            var data = {
+                quantity: quantity,
+                medicineID: id
+            };
+            // Send POST request
+
+            $.ajax({
+                type:"POST",
+                url: "/pharmacists/dispatch",
+                data: data,
+                success: function(response){
+                    if(response === "-1"){
+                        // display error
+                        displayMessage("error", "Not enough stock");
+                        return
+                    }
+                    else {
+                        displayMessage("success", "Medicine dispensed.");
+
+
+                        fuse = new Fuse(response, options);
+                        handleType();
+                    }
+                },
+                error: function(){
+                    displayMessage("error", "Error communicating with server.");
+                }
+            });
+        }
+
+        Date.prototype.toDateInputValue = (function() {
+            var local = new Date(this);
+            local.setMinutes(this.getMinutes() - this.getTimezoneOffset());
+            return local.toJSON().slice(0,10);
+        });
+
+        $(document).ready(function(){
+
+            $.ajax({
+                type:"GET",
+                url: "/pharmacists/getMedicines",
+                success: function(response){
+                    medicineList = response;
+                    console.log(medicineList);
+                    fuse = new Fuse(response, options);
+                    addRow();
+                }
+            });
+
+            $.ajax({
+                type:"GET",
+                url: "/pharmacists/invoiceNumber",
+                success: function(response){
+                    console.log("got number");
+                    var id = response[0]['AUTO_INCREMENT'];
+                    $('#invoiceNumber').text(id);
+                }
+            });
+
+            $("#printInvoice").click(function(){
+                $('#medicine-table tr:last').remove();
+                $('#medicine-table').find("tr th:nth-child(2)").each(function(){
+                    $(this).remove()
+                });
+                $('#medicine-table').find("tr td:nth-child(2)").each(function(){
+                    $(this).remove()
+                });
+                $('#medicine-table').find("tr th:nth-child(5)").each(function(){
+                    $(this).remove()
+                });
+                $('#medicine-table').find("tr td:nth-child(5)").each(function(){
+                    $(this).remove()
+                });
+                $("#printArea").print();
+            });
+
+            $('#invoiceDate').html(new Date().toDateInputValue());
+
+            $(".newInvoice").click(function(){
+                location.reload();
+            });
+
+        });
+
+    </script>
+    <% include ../partials/footer %>
+
+

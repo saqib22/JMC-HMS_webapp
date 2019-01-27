@@ -1,0 +1,137 @@
+<% include ../partials/header %>
+
+<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.0.4/fuse.min.js"></script>
+
+<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script>
+
+    <div class="ui center aligned container">
+        <h1 class="ui massive blue block header very padded" style="margin:40px;"> Medicines </h1>
+        <div class="ui section divider"></div>
+
+            <div id = "messageArea">
+            </div>
+
+            <div class = "ui big icon input">
+            <input type = "text" id = "searchBar" placeholder = "Enter a medicine name">
+            <i class="search icon"></i>
+            </div>
+
+            <div id = "tableArea"></div>
+
+    </div>
+
+
+
+    <script>
+        function displayMessage(type, msg){
+            if (type === "success"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+
+            else if (type === "error"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+        }
+
+
+        var fuse;
+        var options = {
+                          shouldSort: true,
+                          threshold: 0.25,
+                          location: 0,
+                          distance: 100,
+                          maxPatternLength: 32,
+                          minMatchCharLength: 1,
+                          keys: [
+                            "name"
+                        ]
+                        };
+
+        function handleClick(id){
+            console.log(id);
+            var quantity = document.getElementById(id+"-quantity").value;
+            console.log(quantity);
+            var data = {
+                quantity: quantity,
+                medicineID: id
+            };
+            // Send POST request
+
+            $.ajax({
+                type:"POST",
+                url: "/pharmacists/dispatch",
+                data: data,
+                success: function(response){
+                    if(response === "-1"){
+                        // display error
+                        displayMessage("error", "Not enough stock");
+                        return
+                    }
+                    else {
+                        displayMessage("success", "Medicine dispensed.");
+
+
+                        fuse = new Fuse(response, options);
+                        handleType();
+                    }
+                },
+                error: function(){
+                    displayMessage("error", "Error communicating with server.");
+                }
+
+        });
+        }
+
+        function handleType(){
+            var text = searchBar.value;
+            console.log(text);
+            var result = fuse.search(text);
+
+            if (result.length > 0){
+                // Create divs for that medicine
+
+                var start = '<table class = "ui celled table"><thead><tr><th>Name</th><th>Quantity</th><th>Sale Price</th><th>Sale Quantity</th><th></th></tr></thead>';
+
+
+                var inner = ""
+                    result.forEach((medicine)=>{
+                        inner += "<tr><td>"+medicine.name+"</td><td>"+medicine.quantity+"</td><td>"+medicine.salePrice+"</td>"+'<td><input type = "number" id ="' + medicine.medicineID +  '-quantity"/></td><td><button class = "ui green inverted button" onClick = "handleClick(this.id)" id = "' + medicine.medicineID +'">' + 'Sell</button></td></tr>'
+                })
+
+                var end = "</table>"
+
+                document.getElementById("tableArea").innerHTML = start + inner + end;
+
+            }
+            else {
+                document.getElementById('tableArea').innerHTML = "";
+            }
+        }
+
+        $(document).ready(function(){
+            $("#searchBar").val("");
+
+
+            $.ajax({
+                    type:"GET",
+                    url: "/pharmacists/getMedicines",
+                    success: function(response){
+                        console.log(response);
+                        fuse = new Fuse(response, options);
+                    }
+            });
+
+            var searchBar = document.getElementById("searchBar");
+            searchBar.value = "";
+            searchBar.addEventListener("input", handleType);
+
+        });
+
+    </script>
+    <% include ../partials/footer %>
+
+

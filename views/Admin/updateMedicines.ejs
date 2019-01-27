@@ -1,0 +1,232 @@
+<% include ../partials/header %>
+    
+    <script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.0.4/fuse.min.js"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+
+
+<% include ./adminSideBar%>
+
+    <div class="ui  center aligned container" style="margin:10px 0px;">
+
+        <h1 class="ui massive blue header very padded">Manage Medicines </h1>
+        <div class="ui divider"></div>
+        <div id = "messageArea">
+        </div>
+        <div class="left aligned ui blue raised segment" style="width:60%; margin: auto;">
+            <form method = "POST" action = "/admin/medicines">
+                <div class="ui form">
+
+
+                    <div class="ui grid" style="margin:auto;">
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="medicineName">Name:</label>
+                            </div>
+
+                            <div class="ui input eight wide column">
+                                <select onchange = "onSelect()" name = "name" id = "name">
+
+                                </select>
+                            </div>
+                        </div>
+
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="medicineQuantity">Quantity:</label>
+                            </div>
+
+                            <div class="eight wide column">
+                                <input name = "quantity" type="text" id="medicineQuantity" required>
+                            </div>
+
+                        </div>
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="costPrice">Cost Price:</label>
+                            </div>
+
+                            <div class="ui input eight wide column">
+                                <input name = "costPrice" type="number" id="costPrice" required>
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="salePrice">Sale Price:</label>
+                            </div>
+
+                            <div class="ui input eight wide column">
+                                <input name = "salePrice" type="number" id="salePrice" required>
+                            </div>
+                        </div>
+
+
+
+                        <div class="ui center aligned  container">
+                            <button style="margin-top: 20px;" id = "submitButton" type="button" class="ui  compact  blue inverted massive button column center aligned ">
+                                Update
+
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+
+        fuse = {};
+
+
+        function displayMessage(type, msg){
+            if (type === "success"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+
+            else if (type === "error"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+        }
+
+        function handleSend(e){
+            e.preventDefault();
+
+            var name = document.getElementById("name").value;
+            var quantity = document.getElementById("medicineQuantity").value
+            var costPrice = document.getElementById("costPrice").value
+            var salePrice = document.getElementById("salePrice").value
+
+            if (isNaN(quantity)){
+                displayMessage("error", "Enter a valid quantity.");
+                return;
+            }
+
+            if (parseInt(costPrice) > parseInt(salePrice)){
+                displayMessage("error", "Sale price must be greater than cost price.");
+                return;
+            }
+
+            // TODO: validate inputs
+
+            if (name == ""){displayMessage("error", "Please enter a name"); return;}
+
+            if (quantity == ""){displayMessage("error", "Please enter quantity"); return;}
+
+            if (costPrice == ""){displayMessage("error", "Please enter cost"); return;}
+
+            if (salePrice == ""){displayMessage("error", "Please enter cost"); return;}
+
+
+            var data = {
+                name: name,
+                quantity: quantity,
+                costPrice: costPrice,
+                salePrice: salePrice
+            }
+            $.ajax({
+                type:"POST",
+                url: "/admin/updateMedicines",
+                data: data,
+                success: function(response){
+                    console.log(response);
+                    if (response === "-1"){
+                        displayMessage("error", "There is already a medicine with this name in the database.");
+                    }
+                    else if (response === "-2"){
+                        displayMessage("error", "Error adding medicine in database.")
+                    }
+                    else {
+                        // Success
+
+                        var options = {
+                          shouldSort: true,
+                          threshold: 0.25,
+                          location: 0,
+                          distance: 100,
+                          maxPatternLength: 32,
+                          minMatchCharLength: 1,
+                          keys: [
+                            "name"
+                        ]
+                        };
+                        console.log(response);
+                        fuse = new Fuse(response, options);
+                    
+                        displayMessage("success", "Medicine updated.");
+
+
+                        var selectedMedicine = fuse.search(document.getElementById("name").value)[0];
+                        document.getElementById("costPrice").value = selectedMedicine.costPrice;
+                        document.getElementById("salePrice").value = selectedMedicine.salePrice;
+                        document.getElementById("medicineQuantity").value = selectedMedicine.quantity;
+
+
+
+                    }
+
+                    
+                },
+
+                error: function(){
+                    displayMessage("error", "Error communicating with server.")
+                }
+            });
+        }
+
+        function onSelect(){
+            var selectedMedicine = fuse.search(document.getElementById("name").value)[0];
+            document.getElementById("costPrice").value = selectedMedicine.costPrice;
+            document.getElementById("salePrice").value = selectedMedicine.salePrice;
+            document.getElementById("medicineQuantity").value = selectedMedicine.quantity;
+        }
+
+        $(document).ready(function(){
+            $("#submitButton").click(handleSend);
+
+            
+
+            $.ajax({
+                    type:"GET",
+                    url: "/admin/medicines",
+                    success: function(response){
+                        console.log(response);
+                        var select = document.getElementById("name");
+                        var options = "";
+
+                        response.forEach((medicine)=>{
+                            options += '<option>' + medicine.name + '</option>'
+                        })
+
+                        select.innerHTML = options;
+                        $('#name').select2();
+
+
+                        var options = {
+                          shouldSort: true,
+                          threshold: 0.25,
+                          location: 0,
+                          distance: 100,
+                          maxPatternLength: 32,
+                          minMatchCharLength: 1,
+                          keys: [
+                            "name"
+                        ]
+                        };
+                        fuse = new Fuse(response, options);
+                    }
+            });
+            });
+
+    </script>
+
+    <% include ../partials/footer %>

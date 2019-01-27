@@ -1,0 +1,221 @@
+<% include ../partials/header %>
+    
+    <script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.0.4/fuse.min.js"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+
+
+<% include ./receptionistSideBar%>
+
+    <div class="ui  center aligned container" style="margin:10px 0px;">
+
+        <h1 class="ui massive blue header very padded">Doctor Dues</h1>
+        <div class="ui divider"></div>
+        <div id = "messageArea">
+        </div>
+        <div class="left aligned ui blue raised segment" style="width:60%; margin: auto;">
+            <form method = "POST" action = "/receptionist/dues">
+                <div class="ui form">
+                                <input id = "doctor" type = "hidden" name = "doctor">
+
+                    <div class="ui grid" style="margin:auto;">
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="name">Name:</label>
+                            </div>
+
+                            <div class="ui input eight wide column">
+                                <select onchange = "onSelect()" name = "name" id = "name">
+
+                                </select>
+                            </div>
+                        </div>
+
+
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="dues">Amount Due:</label>
+                            </div>
+
+                            <div class="ui input eight wide column">
+                                <input name = "dues" type="number" id="dues" required readonly>
+                            </div>
+                        </div>
+
+                        <div class="row" style="margin-top: 0; margin-bottom: 0;">
+                            <div class="four wide column">
+                                <label class="ui  blue medium header" for="paid">Amount Paid:</label>
+                            </div>
+
+                            <div class="ui input eight wide column">
+                                <input name = "paid" type="number" id="paid" required>
+                            </div>
+                        </div>
+
+
+
+
+
+                        <div class="ui center aligned  container">
+                            <button style="margin-top: 20px;" id = "submitButton" type="button" class="ui  compact  blue inverted massive button column center aligned ">
+                                Update
+
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+
+        fuse = {};
+
+
+        function displayMessage(type, msg){
+            if (type === "success"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui success message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+
+            else if (type === "error"){
+                var messageArea = document.getElementById("messageArea");
+                messageArea.innerHTML = '<div class="ui negative message"><div class="header">' + msg + '</div></div>';
+                setTimeout(function(){messageArea.innerHTML = ""}, 2000);
+            }
+        }
+
+        function handleSend(e){
+            e.preventDefault();
+
+            var name = document.getElementById("name").value;
+            var dues = document.getElementById("dues").value;
+            var paid = document.getElementById("paid").value;
+            var doctor = document.getElementById("doctor").value;
+
+            console.log("doctor:", doctor);
+            
+
+            if (parseInt(paid) > parseInt(dues)){
+                displayMessage("error", "Paid amount must be less than dues.");
+                return;
+            }
+
+            // TODO: validate inputs
+
+            if (name == ""){displayMessage("error", "Please enter a name"); return;}
+
+            if (paid == ""){displayMessage("error", "Please enter amount"); return;}
+
+
+
+            var data = {
+                doctor: doctor,
+                dues: dues,
+                paid: paid,
+            }
+            $.ajax({
+                type:"POST",
+                url: "/receptionist/dues",
+                data: data,
+                success: function(response){
+                    console.log(response);
+                    if (response === "-1"){
+                        displayMessage("error", "There is already a medicine with this name in the database.");
+                    }
+                    else if (response === "-2"){
+                        displayMessage("error", "Error adding medicine in database.")
+                    }
+                    else {
+                        // Success
+
+                        var options = {
+                          shouldSort: true,
+                          threshold: 0.25,
+                          location: 0,
+                          distance: 100,
+                          maxPatternLength: 32,
+                          minMatchCharLength: 1,
+                          keys: [
+                            "name"
+                        ]
+                        };
+                        console.log(response);
+                        for(var i = 0; i < response.length; i++){
+                            response[i].name = response[i].firstName + " " + response[i].lastName
+                        }
+                        fuse = new Fuse(response, options);
+                    
+                        displayMessage("success", "Dues updated.");
+
+                        var selectedDoctor = fuse.search(document.getElementById("name").value)[0];
+                        document.getElementById("dues").value = selectedDoctor.dues;
+                        document.getElementById("paid").value = "";
+                        document.getElementById("doctor").value = selectedDoctor.doctorID;
+                    }
+
+                    
+                },
+
+                error: function(){
+                    displayMessage("error", "Error communicating with server.")
+                }
+            });
+        }
+
+        function onSelect(){
+            var selectedDoctor = fuse.search(document.getElementById("name").value)[0];
+            
+            document.getElementById("dues").value = selectedDoctor.dues;
+            document.getElementById("doctor").value = selectedDoctor.doctorID;
+        }
+
+        $(document).ready(function(){
+            $("#submitButton").click(handleSend);
+
+
+            $.ajax({
+                    type:"GET",
+                    url: "/receptionist/doctorsInfo",
+                    success: function(response){
+                        console.log(response);
+                        var select = document.getElementById("name");
+                        var options = "";
+
+                        response.forEach((doctor)=>{
+                            options += '<option>' + doctor.firstName + ' ' + doctor.lastName + '</option>'
+                        });
+
+                        for(var i = 0; i < response.length; i++){
+                            response[i].name = response[i].firstName + " " + response[i].lastName
+                        }
+
+                        select.innerHTML = options;
+                        $('#name').select2();
+
+
+                        var options = {
+                          shouldSort: true,
+                          threshold: 0.25,
+                          location: 0,
+                          distance: 100,
+                          maxPatternLength: 32,
+                          minMatchCharLength: 1,
+                          keys: [
+                            "name",
+                        ]
+                        };
+                        fuse = new Fuse(response, options);
+                        onSelect();
+                    }
+            });
+            });
+
+    </script>
+
+    <% include ../partials/footer %>

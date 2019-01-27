@@ -1,0 +1,136 @@
+<% include ../partials/header %>
+<% include ./receptionistSideBar %>
+
+<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.0.4/fuse.min.js"></script>
+
+
+    <div class="ui center aligned container">
+        <h1 class="ui massive blue header very padded" style="margin:40px;"> Patients </h1>
+        <div class="ui section divider"></div>
+
+            <div class = "ui big icon input">
+            <input type = "text" id = "searchBar" placeholder = "Enter a name">
+            <i class="search icon"></i>
+            </div>
+
+        
+
+            <div id = "tableArea">
+
+            </div>
+
+    </div>
+
+
+
+    <script>
+        var fuse;
+        var mainTable = '';
+
+        function handleType(){
+            var text = searchBar.value;
+            var result = fuse.search(text);
+
+            if (result.length > 0){
+                
+
+                var start = '<table class = "ui celled table" id = "patient-table"><thead><tr><th>Name</th><th>Cell #</th><th>CNIC</th><th>Address</th><th>Action</th></tr></thead>';
+
+
+                var inner = ""
+                    result.forEach((patient)=>{
+                        inner += "<tr><td>"+patient.name+"</td><td>"+patient.phone+'</td><td>'
+                        if (patient.cnic){
+                            inner+= patient.cnic + '</td><td>'
+                        }
+                        else {
+                            inner+= 'N/A</td><td>'
+                        }
+                        if (patient.address){
+                            inner += patient.address + '</td><td>'
+                        }
+                        else {
+                            inner += 'N/A' + '</td><td>'
+                        }
+                        inner += '<a href = "/receptionist/users/new?data=' + patient.patientID + '">' +   '<button class = "ui small inverted blue button"> Invoice </button></a></td></tr>'
+                })
+
+                var end = "</table>"
+
+                document.getElementById("tableArea").innerHTML = start + inner + end;
+
+            }
+            else {
+                document.getElementById('tableArea').innerHTML = mainTable;
+            }
+            
+        }
+
+        $(document).ready(function(){
+            $("#searchBar").val("");
+
+
+            $.ajax({
+                    type:"GET",
+                    url: "/receptionist/patientsInfo",
+                    success: function(response){
+                        console.log(response);
+                        var options = {
+                          shouldSort: true,
+                          threshold: 0.25,
+                          location: 0,
+                          distance: 100,
+                          maxPatternLength: 32,
+                          minMatchCharLength: 1,
+                          keys: [
+                            "name"
+                        ]
+                        };
+                        for(var i = 0; i < response.length; i++){
+                            response[i].name = response[i].firstName + " " + response[i].lastName
+                        }
+                        fuse = new Fuse(response, options);
+
+                        // generate main table
+
+                        var mainTableHead = '<table class = "ui celled table" id = "patient-table"><thead><tr><th>Name</th><th>Cell #</th><th>CNIC</th><th>Address</th><th>Action</th></tr></thead>';
+
+                        var mainTableBody = '';
+                        var totalInventory = 0;
+                        var table = document.getElementById('tableArea');
+                        if (response.length > 0){
+                            response.forEach((patient)=>{
+                                mainTableBody += '<tr><td>' + patient.name + '</td><td>' + patient.phone +  '</td><td>'
+                                if (patient.cnic){
+                                    mainTableBody += patient.cnic + '</td><td>'
+                                } else {
+                                    mainTableBody += 'N/A</td><td>'
+                                }
+                                if (patient.address){
+                                    mainTableBody += patient.address + '</td><td>'
+                                } else {
+                                    mainTableBody += 'N/A' + '</td><td>'
+                                }
+                                mainTableBody += '<a href = "/receptionist/users/new?data=' + patient.patientID + '">' +   '<button class = "ui small inverted blue button"> Invoice </button></a></td></tr>'
+                            })
+                            mainTable += mainTableHead + mainTableBody + '</table>';
+                        } else {
+                            mainTable = "";
+                        }
+
+                        table.innerHTML = mainTable;
+
+                    }
+            });
+
+
+
+            var searchBar = document.getElementById("searchBar");
+            searchBar.value = "";
+            searchBar.addEventListener("input", handleType);
+
+        })
+    </script>
+    <% include ../partials/footer %>
+
+
